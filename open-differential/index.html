@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Differential Simulator</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161e;
+      --surface2: #1a1e28;
+      --border: #252a38;
+      --accent: #e8ff47;
+      --accent2: #47aaff;
+      --accent3: #ff6b47;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --left-color: #47aaff;
+      --right-color: #ff6b47;
+      --carrier-color: #e8ff47;
+      --font-main: 'Syne', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left h1 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+    }
+
+    .header-left p {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .unit-toggle {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .unit-toggle button {
+      padding: 6px 14px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .unit-toggle button.active {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+    }
+
+    .preset-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .btn-reset {
+      padding: 6px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .btn-reset:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* MAIN LAYOUT */
+    .app-body {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 65px);
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      margin-bottom: 24px;
+    }
+
+    .sidebar-section h3 {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .slider-group {
+      margin-bottom: 14px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 5px;
+    }
+
+    .slider-label span:first-child {
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+
+    .slider-value {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 4px;
+      -webkit-appearance: none;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.3);
+    }
+
+    /* CONTENT */
+    .content {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+
+    .tab {
+      padding: 14px 22px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+
+    .tab:hover {
+      color: var(--text);
+    }
+
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* KPI CARDS */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .kpi-card.carrier::before {
+      background: var(--carrier-color);
+    }
+
+    .kpi-card.left::before {
+      background: var(--left-color);
+    }
+
+    .kpi-card.right::before {
+      background: var(--right-color);
+    }
+
+    .kpi-label {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .kpi-card.carrier .kpi-value {
+      color: var(--carrier-color);
+    }
+
+    .kpi-card.left .kpi-value {
+      color: var(--left-color);
+    }
+
+    .kpi-card.right .kpi-value {
+      color: var(--right-color);
+    }
+
+    .kpi-unit {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+
+    /* STATUS BADGE */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      margin-bottom: 20px;
+    }
+
+    .status-badge.straight {
+      background: rgba(232, 255, 71, 0.1);
+      border: 1px solid rgba(232, 255, 71, 0.3);
+      color: var(--accent);
+    }
+
+    .status-badge.turning {
+      background: rgba(255, 107, 71, 0.1);
+      border: 1px solid rgba(255, 107, 71, 0.3);
+      color: var(--accent3);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    /* DIFF DIAGRAM */
+    .diagram-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* FORMULA BOX */
+    .formula-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .formula-box .f-label {
+      color: var(--muted);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .formula-box .f-eq {
+      color: var(--accent);
+    }
+
+    /* TWO COL */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .two-col.wide-left {
+      grid-template-columns: 2fr 1fr;
+    }
+
+    /* INFO ROW */
+    .info-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .info-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
+    .info-chip .ic-label {
+      color: var(--muted);
+      font-size: 0.65rem;
+    }
+
+    .info-chip .ic-val {
+      color: var(--text);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    /* WARNING */
+    .warning {
+      background: rgba(255, 107, 71, 0.1);
+      border: 1px solid rgba(255, 107, 71, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      color: var(--accent3);
+      font-family: var(--font-mono);
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    .warning.show {
+      display: block;
+    }
+
+    /* BAR CHART */
+    .bar-chart-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .bar-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      width: 120px;
+      flex-shrink: 0;
+      color: var(--text);
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 20px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      min-width: 2px;
+    }
+
+    .bar-val {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      width: 80px;
+      text-align: right;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+
+    /* PRESET DROPDOWN in traction tab */
+    .preset-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .preset-row label {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--muted);
+    }
+
+    select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .traction-status {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      margin-bottom: 16px;
+      border-left: 3px solid var(--accent2);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .disclaimer {
+      background: rgba(107, 114, 128, 0.1);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+
+    /* CHART CANVAS */
+    .chart-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* Responsive */
+    @media (max-width: 800px) {
+      .app-body {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .kpi-row {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .kpi-row {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        padding: 0 12px;
+      }
+
+      .tab {
+        padding: 12px 14px;
+        font-size: 0.78rem;
+      }
+
+      .tab-content {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <h1>⚙ Open Differential Simulator</h1>
+      <p>Kinematics-first learning tool (ideal open diff)</p>
+    </div>
+    <div class="header-right">
+      <div class="unit-toggle">
+        <button id="btnMetric" class="active" onclick="setUnit('metric')">Metric</button>
+        <button id="btnImperial" onclick="setUnit('imperial')">Imperial</button>
+      </div>
+      <select class="preset-select" onchange="applyGlobalPreset(this.value)">
+        <option value="">— Quick Preset —</option>
+        <option value="city">City Slow Turn</option>
+        <option value="highway">Highway Gentle Curve</option>
+        <option value="straight">Straight Line</option>
+      </select>
+      <button class="btn-reset" onclick="resetAll()">↺ Reset</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3>Vehicle</h3>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span id="lblSpeed">Speed</span>
+            <span class="slider-value" id="valSpeed">5.0 km/h</span>
+          </div>
+          <input type="range" id="slSpeed" min="0" max="10" step="0.1" value="5" oninput="onSlider('speed',this.value)">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Wheel Radius</span>
+            <span class="slider-value" id="valWheelRadius">0.32 m</span>
+          </div>
+          <input type="range" id="slWheelRadius" min="0.20" max="0.80" step="0.01" value="0.32"
+            oninput="onSlider('wheelRadius',this.value)">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Track Width</span>
+            <span class="slider-value" id="valTrackWidth">1.60 m</span>
+          </div>
+          <input type="range" id="slTrackWidth" min="1.00" max="3.00" step="0.05" value="1.60"
+            oninput="onSlider('trackWidth',this.value)">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Wheelbase</span>
+            <span class="slider-value" id="valWheelbase">2.70 m</span>
+          </div>
+          <input type="range" id="slWheelbase" min="2.00" max="4.00" step="0.05" value="2.70"
+            oninput="onSlider('wheelbase',this.value)">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Drivetrain</h3>
+        <div class="slider-group" style="margin-bottom:20px;">
+          <label
+            style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.75rem; color:var(--text); margin-bottom:8px;">
+            <input type="checkbox" id="cbXray" onchange="S.xrayMode=this.checked; updateUI(); drawDiff();"> X-Ray Mode
+            (Transparent Carrier)
+          </label>
+          <label
+            style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.75rem; color:var(--text);">
+            <input type="checkbox" id="cbOutlines" checked onchange="S.outlines=this.checked; updateUI(); drawDiff();">
+            Render Outlines
+          </label>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Steering Angle</span>
+            <span class="slider-value" id="valSteering">0°</span>
+          </div>
+          <input type="range" id="slSteering" min="-35" max="35" step="1" value="0"
+            oninput="onSlider('steering',this.value)">
+          <div
+            style="display:flex;justify-content:space-between;font-size:0.62rem;color:var(--muted);font-family:var(--font-mono);margin-top:3px">
+            <span>← Left</span><span>Right →</span>
+          </div>
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Final Drive Ratio</span>
+            <span class="slider-value" id="valDriveRatio">1.0×</span>
+          </div>
+          <input type="range" id="slDriveRatio" min="0.2" max="6.0" step="0.1" value="1.0"
+            oninput="onSlider('driveRatio',this.value)">
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('kinematics')">1 — Kinematics</div>
+        <div class="tab" onclick="switchTab('turning')">2 — Turning Geometry</div>
+      </div>
+
+      <!-- TAB 1: KINEMATICS -->
+      <div id="tab-kinematics" class="tab-content active">
+        <div class="kpi-row">
+          <div class="kpi-card carrier">
+            <div class="kpi-label">Carrier (Avg)</div>
+            <div class="kpi-value" id="kpiCarrier">0.0</div>
+            <div class="kpi-unit">RPM</div>
+          </div>
+          <div class="kpi-card left">
+            <div class="kpi-label">Left Wheel</div>
+            <div class="kpi-value" id="kpiLeft">0.0</div>
+            <div class="kpi-unit">RPM</div>
+          </div>
+          <div class="kpi-card right">
+            <div class="kpi-label">Right Wheel</div>
+            <div class="kpi-value" id="kpiRight">0.0</div>
+            <div class="kpi-unit">RPM</div>
+          </div>
+        </div>
+
+        <div id="statusBadge" class="status-badge straight">
+          <div class="status-dot"></div>
+          <span id="statusText">Straight: ωL = ωR</span>
+        </div>
+
+        <div class="two-col wide-left">
+          <div class="diagram-panel" style="width:100%;">
+            <div class="panel-title">Differential — Isometric View</div>
+            <canvas id="diffCanvas" width="680" height="340"
+              style="display:block; width:100%; object-fit:contain;"></canvas>
+          </div>
+          <div>
+            <div class="formula-box">
+              <div class="f-label">Core Equations</div>
+              <div><span class="f-eq">ωc = (ωL + ωR) / 2</span></div>
+              <div style="margin-top:6px"><span class="f-eq">ω = v / r</span></div>
+              <div style="margin-top:6px"><span class="f-eq">R = L / tan(δ)</span></div>
+              <div style="margin-top:12px;color:var(--muted);font-size:0.68rem">ωc = carrier speed<br>ωL/ωR = wheel
+                speeds<br>v = vehicle speed<br>r = wheel radius<br>R = turn radius, L = wheelbase, δ = steer angle</div>
+            </div>
+            <div style="margin-top:14px" class="formula-box">
+              <div class="f-label">Live Values (rad/s)</div>
+              <div>ωc = <span class="f-eq" id="fCarrier">0.000</span></div>
+              <div>ωL = <span style="color:var(--left-color)" id="fLeft">0.000</span></div>
+              <div>ωR = <span style="color:var(--right-color)" id="fRight">0.000</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: TURNING GEOMETRY -->
+      <div id="tab-turning" class="tab-content">
+        <div id="warnTightTurn" class="warning">⚠ Turn radius too tight for track width — R_inner clamped to 0.5 m</div>
+
+        <div class="info-row">
+          <div class="info-chip">
+            <div class="ic-label">Turn Radius R</div>
+            <div class="ic-val" id="icR">—</div>
+          </div>
+          <div class="info-chip">
+            <div class="ic-label">R Inner</div>
+            <div class="ic-val" id="icRi">—</div>
+          </div>
+          <div class="info-chip">
+            <div class="ic-label">R Outer</div>
+            <div class="ic-val" id="icRo">—</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="diagram-panel">
+            <div class="panel-title">Top-Down View</div>
+            <canvas id="topCanvas" width="480" height="380"
+              style="max-width: 100%; height: auto; display: block;"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <div class="panel-title">Wheel Speeds (RPM) — Live Buffer</div>
+            <canvas id="rpmChart" width="320" height="260"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // STATE
+    // =========================================================
+    const S = {
+      xrayMode: false,
+      outlines: true,
+      xrayMode: false,
+      outlines: true,
+      vehicleSpeed: 5,   // km/h
+      wheelRadius: 0.32,
+      trackWidth: 1.60,
+      wheelbase: 2.70,
+      steeringAngle: 0,   // degrees
+      driveRatio: 1.0,
+      unit: 'metric',
+      // computed
+      v: 0, omegaCarrier: 0, omegaLeft: 0, omegaRight: 0,
+      R: Infinity, R_inner: Infinity, R_outer: Infinity,
+      isTurning: false,
+      // anim angles
+      angleCarrier: 0, angleLeft: 0, angleRight: 0,
+    };
+
+    // =========================================================
+    // COMPUTE
+    // =========================================================
+    function compute() {
+      const r = Math.max(S.wheelRadius, 0.15);
+      S.v = S.vehicleSpeed * (1000 / 3600);
+      const omegaBase = S.v / r;
+      S.omegaCarrier = omegaBase * S.driveRatio;
+
+      const absSteer = Math.abs(S.steeringAngle);
+      S.isTurning = absSteer >= 0.5;
+
+      if (!S.isTurning) {
+        S.omegaLeft = S.omegaCarrier;
+        S.omegaRight = S.omegaCarrier;
+        S.R = Infinity;
+        S.R_inner = Infinity;
+        S.R_outer = Infinity;
+      } else {
+        const steerRad = absSteer * Math.PI / 180;
+        const tanVal = Math.tan(steerRad);
+        S.R = (tanVal < 1e-6) ? 1e6 : S.wheelbase / tanVal;
+
+        const rawInner = S.R - S.trackWidth / 2;
+        const rawOuter = S.R + S.trackWidth / 2;
+        S.R_inner = Math.max(rawInner, 0.5); // clamp
+        S.R_outer = rawOuter;
+        document.getElementById('warnTightTurn').classList.toggle('show', rawInner < 0.5);
+
+        const v_inner = S.v * (S.R_inner / S.R);
+        const v_outer = S.v * (S.R_outer / S.R);
+        let omegaI = (v_inner / r) * S.driveRatio;
+        let omegaO = (v_outer / r) * S.driveRatio;
+
+        // Re-center to match carrier exactly
+        const avg = (omegaI + omegaO) / 2;
+        const eps = 1e-9;
+        const scale = S.omegaCarrier / Math.max(avg, eps);
+        omegaI *= scale;
+        omegaO *= scale;
+
+        if (S.steeringAngle > 0) {
+          // right turn: right = inner, left = outer
+          S.omegaRight = omegaI;
+          S.omegaLeft = omegaO;
+        } else {
+          // left turn: left = inner, right = outer
+          S.omegaLeft = omegaI;
+          S.omegaRight = omegaO;
+        }
+      }
+    }
+
+    function toRPM(rad_s) { return rad_s * 60 / (2 * Math.PI); }
+
+    // =========================================================
+    // SLIDER HANDLERS
+    // =========================================================
+    function onSlider(type, val) {
+      val = parseFloat(val);
+      switch (type) {
+        case 'speed':
+          S.vehicleSpeed = val;
+          document.getElementById('valSpeed').textContent = S.unit === 'metric'
+            ? `${val.toFixed(1)} km/h` : `${(val * 0.621371).toFixed(1)} mph`;
+          break;
+        case 'wheelRadius':
+          S.wheelRadius = val;
+          document.getElementById('valWheelRadius').textContent = S.unit === 'metric'
+            ? `${val.toFixed(2)} m` : `${(val * 39.37).toFixed(1)} in`;
+          break;
+        case 'trackWidth':
+          S.trackWidth = val;
+          document.getElementById('valTrackWidth').textContent = S.unit === 'metric'
+            ? `${val.toFixed(2)} m` : `${(val * 3.28084).toFixed(2)} ft`;
+          break;
+        case 'wheelbase':
+          S.wheelbase = val;
+          document.getElementById('valWheelbase').textContent = S.unit === 'metric'
+            ? `${val.toFixed(2)} m` : `${(val * 3.28084).toFixed(2)} ft`;
+          break;
+        case 'steering':
+          S.steeringAngle = val;
+          document.getElementById('valSteering').textContent = `${val}°`;
+          break;
+        case 'driveRatio':
+          S.driveRatio = val;
+          document.getElementById('valDriveRatio').textContent = `${parseFloat(val).toFixed(1)}×`;
+          break;
+      }
+      compute();
+      updateUI();
+    }
+
+    // =========================================================
+    // UPDATE UI (KPIs, badges, info chips)
+    // =========================================================
+    function updateUI() {
+      const carRPM = toRPM(S.omegaCarrier);
+      const leftRPM = toRPM(S.omegaLeft);
+      const rightRPM = toRPM(S.omegaRight);
+
+      document.getElementById('kpiCarrier').textContent = carRPM.toFixed(1);
+      document.getElementById('kpiLeft').textContent = leftRPM.toFixed(1);
+      document.getElementById('kpiRight').textContent = rightRPM.toFixed(1);
+
+      document.getElementById('fCarrier').textContent = S.omegaCarrier.toFixed(3);
+      document.getElementById('fLeft').textContent = S.omegaLeft.toFixed(3);
+      document.getElementById('fRight').textContent = S.omegaRight.toFixed(3);
+
+      const badge = document.getElementById('statusBadge');
+      const statusText = document.getElementById('statusText');
+      if (S.isTurning) {
+        badge.className = 'status-badge turning';
+        const dir = S.steeringAngle > 0 ? 'Right' : 'Left';
+        statusText.textContent = `${dir} Turn: ωL ≠ ωR`;
+      } else {
+        badge.className = 'status-badge straight';
+        statusText.textContent = 'Straight: ωL = ωR';
+      }
+
+      // turning geometry info
+      const fmt = v => isFinite(v) ? v.toFixed(2) + ' m' : '∞';
+      document.getElementById('icR').textContent = fmt(S.R);
+      document.getElementById('icRi').textContent = fmt(S.R_inner);
+      document.getElementById('icRo').textContent = fmt(S.R_outer);
+    }
+
+    // =========================================================
+    // PRESETS
+    // =========================================================
+    function applyGlobalPreset(val) {
+      if (!val) return;
+      const p = {
+        city: { speed: 2, steering: 25, driveRatio: 1.0 },
+        highway: { speed: 10, steering: 5, driveRatio: 1.0 },
+        straight: { speed: 6, steering: 0, driveRatio: 1.0 },
+      }[val];
+      if (!p) return;
+
+      S.vehicleSpeed = p.speed;
+      S.steeringAngle = p.steering;
+      S.driveRatio = p.driveRatio;
+
+      document.getElementById('slSpeed').value = p.speed;
+      document.getElementById('slSteering').value = p.steering;
+      document.getElementById('slDriveRatio').value = p.driveRatio;
+
+      document.getElementById('valSpeed').textContent = `${p.speed} km/h`;
+      document.getElementById('valSteering').textContent = `${p.steering}°`;
+      document.getElementById('valDriveRatio').textContent = `${p.driveRatio.toFixed(1)}×`;
+
+      compute(); updateUI();
+    }
+
+    function setUnit(u) {
+      S.unit = u;
+      document.getElementById('btnMetric').classList.toggle('active', u === 'metric');
+      document.getElementById('btnImperial').classList.toggle('active', u === 'imperial');
+      // Refresh labels
+      onSlider('speed', S.vehicleSpeed);
+      onSlider('wheelRadius', S.wheelRadius);
+      onSlider('trackWidth', S.trackWidth);
+      onSlider('wheelbase', S.wheelbase);
+    }
+
+    function resetAll() {
+      const defaults = { vehicleSpeed: 5, wheelRadius: 0.32, trackWidth: 1.60, wheelbase: 2.70, steeringAngle: 0, driveRatio: 1.0 };
+      Object.assign(S, defaults);
+      document.getElementById('slSpeed').value = 5;
+      document.getElementById('slWheelRadius').value = 0.32;
+      document.getElementById('slTrackWidth').value = 1.60;
+      document.getElementById('slWheelbase').value = 2.70;
+      document.getElementById('slSteering').value = 0;
+      document.getElementById('slDriveRatio').value = 1.0;
+      ['speed', 'wheelRadius', 'trackWidth', 'wheelbase', 'steering', 'driveRatio'].forEach(k => {
+        onSlider(k, S[k] ?? S.vehicleSpeed);
+      });
+      // re-trigger all
+      onSlider('speed', 5);
+      onSlider('wheelRadius', 0.32);
+      onSlider('trackWidth', 1.60);
+      onSlider('wheelbase', 2.70);
+      onSlider('steering', 0);
+      onSlider('driveRatio', 1.0);
+    }
+
+    // =========================================================
+    // TAB SWITCHING
+    // =========================================================
+    function switchTab(id) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', ['kinematics', 'turning', 'traction'][i] === id);
+      });
+      document.querySelectorAll('.tab-content').forEach(tc => {
+        tc.classList.toggle('active', tc.id === 'tab-' + id);
+      });
+    }
+
+    // =========================================================
+    // =========================================================
+    // DIFFERENTIAL — TRUE 3D Renderer (Strict Opaque)
+    // =========================================================
+    const diffCtx = document.getElementById('diffCanvas').getContext('2d');
+
+    const DW = 680, DH = 340;
+    let SC = 44;
+    let OX = DW * 0.45, OY = DH * 0.55;
+
+    // Projection vectors
+    const PX = 0.88, PY_X = 0.28;
+    const QX = -0.55, QY_Z = 0.42;
+
+    // Light direction for shading
+    const LDir = { x: 0.577, y: 0.577, z: 0.577 };
+
+    function project(p) {
+      return [
+        OX + p.x * PX * SC + p.z * QX * SC,
+        OY + p.x * PY_X * SC + p.z * QY_Z * SC - p.y * SC
+      ];
+    }
+
+    function rotX(p, a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return { x: p.x, y: p.y * c - p.z * s, z: p.y * s + p.z * c };
+    }
+    function rotY(p, a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return { x: p.x * c + p.z * s, y: p.y, z: -p.x * s + p.z * c };
+    }
+    function rotZ(p, a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return { x: p.x * c - p.y * s, y: p.x * s + p.y * c, z: p.z };
+    }
+
+    function computeNormal(p0, p1, p2) {
+      const v1 = { x: p1.x - p0.x, y: p1.y - p0.y, z: p1.z - p0.z };
+      const v2 = { x: p2.x - p0.x, y: p2.y - p0.y, z: p2.z - p0.z };
+      const nx = v1.y * v2.z - v1.z * v2.y;
+      const ny = v1.z * v2.x - v1.x * v2.z;
+      const nz = v1.x * v2.y - v1.y * v2.x;
+      const len = Math.hypot(nx, ny, nz);
+      return len === 0 ? { x: 0, y: 1, z: 0 } : { x: nx / len, y: ny / len, z: nz / len };
+    }
+
+    let polys = [];
+
+    function addPoly(points, fillHex, alpha = 1.0, noStroke = false, noFill = false) {
+      if (points.length < 3) return;
+
+      // Centroid for depth sorting
+      let cx = 0, cy = 0, cz = 0;
+      for (let p of points) { cx += p.x; cy += p.y; cz += p.z; }
+      cx /= points.length; cy /= points.length; cz /= points.length;
+
+      // True depth logic into screen (dot product with camera ray)
+      const depth = cx * 0.55 + cy * 0.5236 + cz * 0.88;
+
+      const prj = points.map(project);
+
+      // Backface culling
+      const cross = (prj[1][0] - prj[0][0]) * (prj[2][1] - prj[0][1]) - (prj[1][1] - prj[0][1]) * (prj[2][0] - prj[0][0]);
+      if (cross < 0 && alpha >= 1.0) return;
+
+      const normal = computeNormal(points[0], points[1], points[2]);
+      const dot = normal.x * LDir.x + normal.y * LDir.y + normal.z * LDir.z;
+      const light = Math.max(0.65, Math.min(1.0, 0.65 + dot * 0.45));
+
+      polys.push({ pts: prj, fill: fillHex, light, depth, alpha, noStroke, noFill });
+    }
+
+    function applyLighting(hex, light, alpha = 1.0) {
+      if (!hex) return null;
+      if (hex.startsWith('rgba')) return hex;
+
+      let r = 0, g = 0, b = 0;
+      if (hex.length === 7) {
+        r = parseInt(hex.slice(1, 3), 16);
+        g = parseInt(hex.slice(3, 5), 16);
+        b = parseInt(hex.slice(5, 7), 16);
+      } else if (hex.length === 9) { // #RRGGBBAA ignore alpha to force opaque
+        r = parseInt(hex.slice(1, 3), 16);
+        g = parseInt(hex.slice(3, 5), 16);
+        b = parseInt(hex.slice(5, 7), 16);
+      }
+
+      r = Math.min(255, Math.floor(r * light));
+      g = Math.min(255, Math.floor(g * light));
+      b = Math.min(255, Math.floor(b * light));
+
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    // Strictly solid bright neon colors
+    const C = {
+      carrier: '#a0aabf',
+      gearL: '#00ccff', gearR: '#ff4400', spider: '#ff00ff', // brighter neon logic
+      pinion: '#ccff00', shaftL: '#006699', shaftR: '#993300'
+    };
+
+    function buildCylinder(rx, ry, len, axis, cx, cy, cz, segments, hexColor, alpha = 1.0, angle = 0) {
+      const pts1 = [], pts2 = [];
+      for (let i = 0; i < segments; i++) {
+        const a = (i / segments) * Math.PI * 2 + angle;
+        const c = Math.cos(a), s = Math.sin(a);
+        let p1, p2;
+        if (axis === 'x') {
+          p1 = { x: cx - len / 2, y: cy + rx * c, z: cz + ry * s };
+          p2 = { x: cx + len / 2, y: cy + rx * c, z: cz + ry * s };
+        } else if (axis === 'y') {
+          p1 = { x: cx + rx * c, y: cy - len / 2, z: cz + ry * s };
+          p2 = { x: cx + rx * c, y: cy + len / 2, z: cz + ry * s };
+        } else if (axis === 'z') {
+          p1 = { x: cx + rx * c, y: cy + ry * s, z: cz - len / 2 };
+          p2 = { x: cx + rx * c, y: cy + ry * s, z: cz + len / 2 };
+        }
+        pts1.push(p1); pts2.push(p2);
+      }
+
+      for (let i = 0; i < segments; i++) {
+        const n = (i + 1) % segments;
+        addPoly([pts1[i], pts2[i], pts2[n], pts1[n]], hexColor, alpha);
+      }
+
+      let c1, c2;
+      if (axis === 'x') {
+        c1 = { x: cx - len / 2, y: cy, z: cz }; c2 = { x: cx + len / 2, y: cy, z: cz };
+      } else if (axis === 'y') {
+        c1 = { x: cx, y: cy - len / 2, z: cz }; c2 = { x: cx, y: cy + len / 2, z: cz };
+      } else if (axis === 'z') {
+        c1 = { x: cx, y: cy, z: cz - len / 2 }; c2 = { x: cx, y: cy, z: cz + len / 2 };
+      }
+
+      // Cap 1 (reverse winding)
+      for (let i = 0; i < segments; i++) {
+        const n = (i + 1) % segments;
+        addPoly([c1, pts1[n], pts1[i]], hexColor, alpha, true, false);
+      }
+      addPoly(pts1.slice().reverse(), hexColor, alpha, false, true);
+
+      // Cap 2 (forward winding)
+      for (let i = 0; i < segments; i++) {
+        const n = (i + 1) % segments;
+        addPoly([c2, pts2[i], pts2[n]], hexColor, alpha, true, false);
+      }
+      addPoly(pts2.slice(), hexColor, alpha, false, true);
+    }
+
+    function buildBevelGear(cx, cy, cz, rOuter, rInner, tFace, angle, axis, nTeeth, hexFace, alpha = 1.0) {
+      const M = nTeeth * 4;
+      const ptsB = [], ptsF = [];
+      const RO_V = rOuter * 0.82, RO_T = rOuter;
+      const RI_V = rInner * 0.82, RI_T = rInner;
+
+      for (let i = 0; i < nTeeth; i++) {
+        const A = (i / nTeeth) * Math.PI * 2 + angle;
+        const step = (Math.PI * 2 / nTeeth) / 4;
+        for (let j = 0; j < 4; j++) {
+          const rB = (j === 1 || j === 2) ? RO_T : RO_V;
+          const rF = (j === 1 || j === 2) ? RI_T : RI_V;
+          const a = A + j * step - (1.5 * step);
+          const c = Math.cos(a), s = Math.sin(a);
+
+          if (axis === '+x') {
+            ptsB.push({ x: cx, y: cy + rB * c, z: cz + rB * s });
+            ptsF.push({ x: cx + tFace, y: cy + rF * c, z: cz + rF * s });
+          } else if (axis === '-x') {
+            ptsB.push({ x: cx, y: cy - rB * c, z: cz + rB * s });
+            ptsF.push({ x: cx - tFace, y: cy - rF * c, z: cz + rF * s });
+          } else if (axis === '+y') {
+            ptsB.push({ x: cx + rB * c, y: cy, z: cz + rB * s });
+            ptsF.push({ x: cx + rF * c, y: cy + tFace, z: cz + rF * s });
+          } else if (axis === '-y') {
+            ptsB.push({ x: cx - rB * c, y: cy, z: cz + rB * s });
+            ptsF.push({ x: cx - rF * c, y: cy - tFace, z: cz + rF * s });
+          } else if (axis === '+z') {
+            ptsB.push({ x: cx + rB * c, y: cy + rB * s, z: cz });
+            ptsF.push({ x: cx + rF * c, y: cy + rF * s, z: cz + tFace });
+          } else if (axis === '-z') {
+            ptsB.push({ x: cx + rB * c, y: cy + rB * s, z: cz });
+            ptsF.push({ x: cx + rF * c, y: cy + rF * s, z: cz - tFace });
+          }
+        }
+      }
+
+      if (axis === '-x' || axis === '-y' || axis === '-z') {
+        ptsB.reverse();
+        ptsF.reverse();
+      }
+
+      // 1. Draw the side bands connecting Back to Front
+      for (let i = 0; i < M; i++) {
+        const n = (i + 1) % M;
+        addPoly([ptsB[i], ptsF[i], ptsF[n], ptsB[n]], hexFace, alpha);
+      }
+
+      // 2. Center Points for caps (breaking big flat faces into solid triangle fans fixes depth bugs)
+      let cB, cF;
+      if (axis === '+x') { cB = { x: cx, y: cy, z: cz }; cF = { x: cx + tFace, y: cy, z: cz }; }
+      if (axis === '-x') { cB = { x: cx, y: cy, z: cz }; cF = { x: cx - tFace, y: cy, z: cz }; }
+      if (axis === '+y') { cB = { x: cx, y: cy, z: cz }; cF = { x: cx, y: cy + tFace, z: cz }; }
+      if (axis === '-y') { cB = { x: cx, y: cy, z: cz }; cF = { x: cx, y: cy - tFace, z: cz }; }
+      if (axis === '+z') { cB = { x: cx, y: cy, z: cz }; cF = { x: cx, y: cy, z: cz + tFace }; }
+      if (axis === '-z') { cB = { x: cx, y: cy, z: cz }; cF = { x: cx, y: cy, z: cz - tFace }; }
+
+      // Wait! If the axis was reversed, the polygon vertex order was inverted above
+      // This means our triangle fan winding index must ALSO be inverted to point Outwards.
+      const isReversed = (axis === '-x' || axis === '-y' || axis === '-z');
+
+      // 3. Draw Back Cap (Triangle fan, facing Outwards from Back)
+      for (let i = 0; i < M; i++) {
+        const n = (i + 1) % M;
+        if (isReversed) {
+          addPoly([cB, ptsB[i], ptsB[n]], hexFace, alpha, true, false);
+        } else {
+          addPoly([cB, ptsB[n], ptsB[i]], hexFace, alpha, true, false);
+        }
+      }
+      addPoly(isReversed ? ptsB.slice() : ptsB.slice().reverse(), hexFace, alpha, false, true);
+
+      // 4. Draw Front Cap (Triangle fan, facing Outwards from Front)
+      for (let i = 0; i < M; i++) {
+        const n = (i + 1) % M;
+        if (isReversed) {
+          addPoly([cF, ptsF[n], ptsF[i]], hexFace, alpha, true, false);
+        } else {
+          addPoly([cF, ptsF[i], ptsF[n]], hexFace, alpha, true, false);
+        }
+      }
+      addPoly(isReversed ? ptsF.slice().reverse() : ptsF.slice(), hexFace, alpha, false, true);
+    }
+
+    function buildRing(x, y, z, rOut, rIn, d, fill, alpha = 1.0) {
+      const N = 24;
+      const ptsBackOuter = [], ptsBackInner = [];
+      const ptsFaceOuter = [], ptsFaceInner = [];
+      for (let i = 0; i < N; i++) {
+        const a = (i / N) * Math.PI * 2;
+        const c = Math.cos(a), s = Math.sin(a);
+        ptsBackOuter.push({ x: x - d / 2, y: y + rOut * c, z: z + rOut * s });
+        ptsBackInner.push({ x: x - d / 2, y: y + rIn * c, z: z + rIn * s });
+        ptsFaceOuter.push({ x: x + d / 2, y: y + rOut * c, z: z + rOut * s });
+        ptsFaceInner.push({ x: x + d / 2, y: y + rIn * c, z: z + rIn * s });
+      }
+
+      for (let i = 0; i < N; i++) {
+        const n = (i + 1) % N;
+        addPoly([ptsBackOuter[i], ptsFaceOuter[i], ptsFaceOuter[n], ptsBackOuter[n]], fill, alpha);
+        addPoly([ptsFaceInner[i], ptsBackInner[i], ptsBackInner[n], ptsFaceInner[n]], fill, alpha);
+        addPoly([ptsFaceOuter[i], ptsFaceInner[i], ptsFaceInner[n], ptsFaceOuter[n]], fill, alpha, true, false);
+        addPoly([ptsBackInner[i], ptsBackOuter[i], ptsBackOuter[n], ptsBackInner[n]], fill, alpha, true, false);
+      }
+
+      // Outer and inner perimeter loops explicitly stroked to avoid quad borders mapping to the center
+      addPoly(ptsFaceOuter.slice(), fill, alpha, false, true);
+      addPoly(ptsFaceInner.slice().reverse(), fill, alpha, false, true);
+      addPoly(ptsBackOuter.slice().reverse(), fill, alpha, false, true);
+      addPoly(ptsBackInner.slice(), fill, alpha, false, true);
+    }
+
+
+    function renderPolys(ctx) {
+      polys.sort((a, b) => a.depth - b.depth);
+
+      for (let poly of polys) {
+        if (poly.pts.length < 3) continue;
+        ctx.beginPath();
+        for (let i = 0; i < poly.pts.length; i++) {
+          const p = poly.pts[i];
+          if (i === 0) ctx.moveTo(p[0], p[1]);
+          else ctx.lineTo(p[0], p[1]);
+        }
+        ctx.closePath();
+
+        if (!poly.noFill) {
+          ctx.fillStyle = applyLighting(poly.fill, poly.light, poly.alpha);
+          ctx.fill();
+        }
+
+        if (S.outlines && poly.fill && !poly.fill.includes('rgba') && !poly.noStroke) {
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1.0;
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ── MAIN DRAW FUNCTION ────────────────────────────────────
+    function drawDiff() {
+      const ctx = diffCtx;
+      ctx.clearRect(0, 0, DW, DH);
+      ctx.fillStyle = '#0d0f14';
+      ctx.fillRect(0, 0, DW, DH);
+
+      polys = [];
+
+      const aL = S.angleLeft, aR = S.angleRight;
+      const aC = S.angleCarrier, aSp = S.angleSpider || 0;
+
+      // Sizes based dynamically on UI input states
+      // We use trackWidth to extend the axles, and wheelRadius to make the wheel indicators larger
+      const scaleAxis = S.trackWidth / 1.6;        // 1.0 at default 1.6m width
+      const scaleWheel = S.wheelRadius / 0.32;     // 1.0 at default 0.32m
+
+      const HW = 1.4, HH = 1.5, HD = 1.5;
+      const AXR = 0.22, AXLEN = 3.5 * scaleAxis;
+      const PGR = 0.95, PGT = 0.45, PGZ = HW - PGT - 0.2;
+      const SGR = 0.85, SGT = 0.35, SGY = 0.8;
+
+      // Dynamic projection scale to keep the diagram fitting inside the canvas
+      // Base scale is 36. If trackWidth is large, we reduce scale.
+      SC = 36 * (1.6 / Math.max(1.6, S.trackWidth));
+      // Adjust origin slightly depending on scale
+      OX = DW * 0.45; OY = DH * 0.55;
+
+      // HOUSING & SPIDERS (Completely removing the large rectangular side boxes!)
+      let carrierGroup = [];
+      const stashAdd = addPoly;
+      addPoly = (pts, fill, transp, noS, noF) => carrierGroup.push({ pts, fill, transp, noS, noF });
+
+      // Carrier Ring Gear (driven by pinion)
+      const cx_cg = -HW * 0.9 - 0.2;
+      buildCylinder(HD * 1.4, HD * 1.4, 0.2, 'x', cx_cg - 0.1, 0, 0, 36, '#b5c928', S.xrayMode ? 0.2 : 1.0, 0); // Flange base
+      buildBevelGear(cx_cg, 0, 0, HD * 1.4, HD * 1.1, 0.4, 0, '+x', 30, '#b5c928', S.xrayMode ? 0.2 : 1.0);
+
+      // Cross pin tying the spiders together
+      buildCylinder(0.15, 0.15, HH * 2.0, 'y', 0, 0, 0, 16, C.carrier, S.xrayMode ? 0.2 : 1.0);
+
+      // Spiders (Need manual angle `aSp` since the carrier loop only adds `aC`)
+      buildCylinder(SGR, SGR, 0.2, 'y', 0, SGY + SGT + 0.1, 0, 24, C.spider, 1.0, -aSp); // Flange
+      buildBevelGear(0, SGY + SGT, 0, SGR, SGR * 0.8, SGT, aSp, '-y', 12, C.spider);
+
+      buildCylinder(SGR, SGR, 0.2, 'y', 0, -SGY - SGT - 0.1, 0, 24, C.spider, 1.0, aSp); // Flange
+      buildBevelGear(0, -SGY - SGT, 0, SGR, SGR * 0.8, SGT, -aSp, '+y', 12, C.spider);
+
+      addPoly = stashAdd;
+
+      for (let p of carrierGroup) {
+        p.pts = p.pts.map(pt => rotX(pt, aC));
+        addPoly(p.pts, p.fill, p.transp, p.noS, p.noF);
+      }
+
+      // LEFT AXLE & PLANETARIO
+      let leftSide = [];
+      addPoly = (pts, f, t, noS, noF) => leftSide.push({ pts, f, t, noS, noF });
+      buildCylinder(AXR, AXR, AXLEN, 'x', -HW - AXLEN / 2 + 0.5, 0, 0, 12, C.shaftL);
+      buildCylinder(PGR, PGR, 0.3, 'x', -PGZ - 0.15, 0, 0, 24, C.gearL); // Flange
+      buildBevelGear(-PGZ, 0, 0, PGR, PGR * 0.8, PGT, 0, '+x', 14, C.gearL);
+      // Optional wheel indicator scales radially with wheelRadius
+      buildCylinder(1.5 * scaleWheel, 1.5 * scaleWheel, 0.6, 'x', -HW - AXLEN + 0.3, 0, 0, 24, C.gearL, 0.6);
+
+      // RIGHT AXLE & PLANETARIO 
+      let rightSide = [];
+      addPoly = (pts, f, t, noS, noF) => rightSide.push({ pts, f, t, noS, noF });
+      buildCylinder(AXR, AXR, AXLEN, 'x', HW + AXLEN / 2 - 0.5, 0, 0, 12, C.shaftR);
+      buildCylinder(PGR, PGR, 0.3, 'x', PGZ + 0.15, 0, 0, 24, C.gearR); // Flange
+      buildBevelGear(PGZ, 0, 0, PGR, PGR * 0.8, PGT, 0, '-x', 14, C.gearR);
+      // Optional wheel indicator
+      buildCylinder(1.5 * scaleWheel, 1.5 * scaleWheel, 0.6, 'x', HW + AXLEN - 0.3, 0, 0, 24, C.gearR, 0.6);
+
+      addPoly = stashAdd;
+      for (let p of leftSide) {
+        p.pts = p.pts.map(pt => rotX(pt, aL));
+        addPoly(p.pts, p.f, p.t, p.noS, p.noF);
+      }
+      for (let p of rightSide) {
+        p.pts = p.pts.map(pt => rotX(pt, aR));
+        addPoly(p.pts, p.f, p.t, p.noS, p.noF);
+      }
+
+      // PINION GEAR
+      let pinion = [];
+      addPoly = (pts, f, t, noS, noF) => pinion.push({ pts, f, t, noS, noF });
+      buildCylinder(0.2, 0.2, 2.0, 'z', -HW * 0.9 - 0.2, 0, -2.4, 12, C.pinion);
+      buildCylinder(0.6, 0.6, 0.2, 'z', -HW * 0.9 - 0.2, 0, -1.9 - 0.1, 24, C.pinion); // Flange
+      buildBevelGear(-HW * 0.9 - 0.2, 0, -1.9, 0.6, 0.5, 0.3, 0, '+z', 10, C.pinion);
+
+      addPoly = stashAdd;
+      for (let p of pinion) {
+        let cp = { x: -HW * 0.9 - 0.2, y: 0, z: -1.9 };
+        p.pts = p.pts.map(pt => {
+          let tp = { x: pt.x - cp.x, y: pt.y - cp.y, z: pt.z - cp.z };
+          tp = rotZ(tp, aC * S.driveRatio);
+          return { x: tp.x + cp.x, y: tp.y + cp.y, z: tp.z + cp.z };
+        });
+        addPoly(p.pts, p.f, p.t, p.noS, p.noF);
+      }
+
+      renderPolys(ctx);
+
+      // 2D Overlay Labels
+      const f9 = '9px JetBrains Mono,monospace';
+      const f10 = 'bold 10px JetBrains Mono,monospace';
+
+      const tp = project({ x: 0, y: HH + 1.2, z: 0 });
+      ctx.font = f10; ctx.fillStyle = '#e8ff47'; ctx.textAlign = 'center';
+      ctx.fillText('CARRIER  ' + toRPM(S.omegaCarrier).toFixed(1) + ' RPM', tp[0], tp[1] - 4);
+
+      const lp = project({ x: -HW - AXLEN + 0.5, y: 2.2, z: 0 });
+      ctx.font = f9; ctx.fillStyle = '#47aaff'; ctx.textAlign = 'center';
+      ctx.fillText('RUEDA IZQ', lp[0], lp[1] - 2);
+      ctx.fillStyle = '#47aaffaa'; ctx.fillText(toRPM(S.omegaLeft).toFixed(1) + ' RPM', lp[0], lp[1] + 10);
+
+      const rp = project({ x: HW + AXLEN - 0.5, y: 2.2, z: 0 });
+      ctx.fillStyle = '#ff6b47'; ctx.textAlign = 'center';
+      ctx.fillText('RUEDA DER', rp[0], rp[1] - 2);
+      ctx.fillStyle = '#ff6b47aa'; ctx.fillText(toRPM(S.omegaRight).toFixed(1) + ' RPM', rp[0], rp[1] + 10);
+
+      if (S.isTurning) {
+        const d = Math.abs(toRPM(S.omegaRight) - toRPM(S.omegaLeft)).toFixed(1);
+        const dp = project({ x: 0, y: -HH - 0.5, z: 0 });
+        ctx.font = f9; ctx.fillStyle = '#cc88ffcc'; ctx.textAlign = 'center';
+        ctx.fillText('Δω = ' + d + ' RPM', dp[0], dp[1] + 14);
+      }
+    }
+
+    // TOP-DOWN CAR DIAGRAM
+    // =========================================================
+    const topCtx = document.getElementById('topCanvas').getContext('2d');
+
+    function drawTopDown() {
+      const W = 480, H = 380;
+      topCtx.clearRect(0, 0, W, H);
+      topCtx.fillStyle = '#0d0f14';
+      topCtx.fillRect(0, 0, W, H);
+
+      let carW = 50, carH = 100;
+      let scale = carW / S.trackWidth;
+
+
+
+      const cx = W * 0.35, cy = H / 2 - 20;
+
+      // If turning, draw arc paths
+      if (S.isTurning && isFinite(S.R) && S.R < 500) {
+        const Risc = S.R_inner * scale;
+        const Rosc = S.R_outer * scale;
+
+        const turnRight = S.steeringAngle > 0;
+        const arcCx = turnRight ? cx + S.R * scale : cx - S.R * scale;
+        // Arc center aligns exactly with the rear axle
+        const arcCy = cy + carH * 0.3;
+
+        topCtx.setLineDash([]);
+
+        // Calculate correct sweeping arc angles
+        const startAng = turnRight ? Math.PI * 0.5 : Math.PI * 1.5;
+        const endAng = turnRight ? Math.PI * 1.5 : Math.PI * 0.5;
+
+        // Inner path
+        topCtx.beginPath();
+        topCtx.strokeStyle = turnRight ? '#ff6b47' : '#47aaff';
+        topCtx.lineWidth = 2.5;
+        topCtx.arc(arcCx, arcCy, Risc, startAng, endAng, false);
+        topCtx.stroke();
+
+        // Outer path
+        topCtx.beginPath();
+        topCtx.strokeStyle = turnRight ? '#47aaff' : '#ff6b47';
+        topCtx.lineWidth = 2.5;
+        topCtx.arc(arcCx, arcCy, Rosc, startAng, endAng, false);
+        topCtx.stroke();
+      } else {
+        // Straight arrows
+        topCtx.setLineDash([]);
+        topCtx.lineWidth = 2.0;
+
+        // Left Wheel Straight Path
+        topCtx.strokeStyle = '#47aaff';
+        topCtx.beginPath();
+        topCtx.moveTo(cx - carW / 2, cy + carH * 0.3);
+        topCtx.lineTo(cx - carW / 2, cy - carH * 0.8 - 30);
+        topCtx.stroke();
+
+        // Right Wheel Straight Path
+        topCtx.strokeStyle = '#ff6b47';
+        topCtx.beginPath();
+        topCtx.moveTo(cx + carW / 2, cy + carH * 0.3);
+        topCtx.lineTo(cx + carW / 2, cy - carH * 0.8 - 30);
+        topCtx.stroke();
+      }
+
+      // Car body
+      topCtx.fillStyle = '#1a1e28';
+      topCtx.strokeStyle = '#e8ff47';
+      topCtx.lineWidth = 1.5;
+      topCtx.beginPath();
+      topCtx.roundRect(cx - carW / 2, cy - carH / 2, carW, carH, 8);
+      topCtx.fill();
+      topCtx.stroke();
+
+      // Wheels (4) -> scaled dynamically
+      const ww = 10 * (carW / 50), wh = 22 * (carW / 50);
+      const positions = [
+        { x: cx - carW / 2 - ww / 2, y: cy - carH * 0.3 - wh / 2, label: 'FL', color: '#555' },
+        { x: cx + carW / 2 - ww / 2, y: cy - carH * 0.3 - wh / 2, label: 'FR', color: '#555' },
+        { x: cx - carW / 2 - ww / 2, y: cy + carH * 0.3 - wh / 2, label: 'RL', color: '#47aaff' },
+        { x: cx + carW / 2 - ww / 2, y: cy + carH * 0.3 - wh / 2, label: 'RR', color: '#ff6b47' },
+      ];
+
+      positions.forEach(p => {
+        topCtx.fillStyle = p.color;
+        topCtx.strokeStyle = p.color === '#555' ? '#666' : p.color;
+        topCtx.lineWidth = 1;
+        topCtx.beginPath();
+        topCtx.roundRect(p.x, p.y, ww, wh, 3);
+        topCtx.fill();
+        topCtx.stroke();
+      });
+
+      // Speed arrows on rear wheels
+      function arrowUp(x, y, speed, color) {
+        const len = Math.min(Math.abs(speed) * 0.8, 40);
+        if (len < 1) return;
+        topCtx.strokeStyle = color;
+        topCtx.lineWidth = 2;
+        topCtx.beginPath();
+        topCtx.moveTo(x, y);
+        topCtx.lineTo(x, y - len);
+        topCtx.stroke();
+        // arrowhead
+        topCtx.beginPath();
+        topCtx.moveTo(x - 4, y - len + 6);
+        topCtx.lineTo(x, y - len);
+        topCtx.lineTo(x + 4, y - len + 6);
+        topCtx.stroke();
+      }
+
+      const arrowBase = cy + carH * 0.3 - wh / 2;
+      arrowUp(cx - carW / 2 + 5, arrowBase, toRPM(S.omegaLeft) * 0.06, '#47aaff');
+      arrowUp(cx + carW / 2 + 5, arrowBase, toRPM(S.omegaRight) * 0.06, '#ff6b47');
+
+      // Front direction arrow
+      topCtx.fillStyle = '#e8ff4788';
+      topCtx.font = 'bold 12px Syne';
+      topCtx.textAlign = 'center';
+      topCtx.fillText('▲', cx, cy - carH / 2 - 14);
+
+      // Legend
+      topCtx.font = '9px JetBrains Mono, monospace';
+      topCtx.fillStyle = '#47aaff';
+      topCtx.textAlign = 'left';
+      topCtx.fillText('← Left (blue)', 8, H - 20);
+      topCtx.fillStyle = '#ff6b47';
+      topCtx.fillText('Right (orange) →', 8, H - 8);
+    }
+
+    // =========================================================
+    // RPM CHART
+    // =========================================================
+    const rpmCtx = document.getElementById('rpmChart').getContext('2d');
+    const rpmBuffer = { left: [], right: [], max: 50 };
+
+    function pushRPMBuffer() {
+      rpmBuffer.left.push(toRPM(S.omegaLeft));
+      rpmBuffer.right.push(toRPM(S.omegaRight));
+      if (rpmBuffer.left.length > rpmBuffer.max) {
+        rpmBuffer.left.shift();
+        rpmBuffer.right.shift();
+      }
+    }
+
+    function drawRPMChart() {
+      const W = 320, H = 260;
+      rpmCtx.clearRect(0, 0, W, H);
+      rpmCtx.fillStyle = '#0d0f14';
+      rpmCtx.fillRect(0, 0, W, H);
+
+      const padL = 40, padR = 10, padT = 14, padB = 30;
+      const chartW = W - padL - padR;
+      const chartH = H - padT - padB;
+
+      const allVals = [...rpmBuffer.left, ...rpmBuffer.right];
+      const maxVal = Math.max(...allVals, 1);
+      const minVal = Math.min(...allVals, 0);
+      const range = Math.max(maxVal - minVal, 1);
+
+      // Grid
+      rpmCtx.strokeStyle = '#252a38';
+      rpmCtx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = padT + (chartH / 4) * i;
+        rpmCtx.beginPath(); rpmCtx.moveTo(padL, y); rpmCtx.lineTo(padL + chartW, y); rpmCtx.stroke();
+        const v = maxVal - (range / 4) * i;
+        rpmCtx.fillStyle = '#6b7280';
+        rpmCtx.font = '9px JetBrains Mono';
+        rpmCtx.textAlign = 'right';
+        rpmCtx.fillText(v.toFixed(0), padL - 4, y + 3);
+      }
+
+      function drawLine(data, color) {
+        if (data.length < 2) return;
+        rpmCtx.beginPath();
+        rpmCtx.strokeStyle = color;
+        rpmCtx.lineWidth = 2;
+        rpmCtx.lineJoin = 'round';
+        data.forEach((v, i) => {
+          const x = padL + (i / (rpmBuffer.max - 1)) * chartW;
+          const y = padT + chartH - ((v - minVal) / range) * chartH;
+          i === 0 ? rpmCtx.moveTo(x, y) : rpmCtx.lineTo(x, y);
+        });
+        rpmCtx.stroke();
+      }
+
+      drawLine(rpmBuffer.left, '#47aaff');
+      drawLine(rpmBuffer.right, '#ff6b47');
+
+      // x axis label
+      rpmCtx.fillStyle = '#6b7280';
+      rpmCtx.font = '9px JetBrains Mono';
+      rpmCtx.textAlign = 'left';
+      rpmCtx.fillText('← older', padL, H - 6);
+      rpmCtx.textAlign = 'right';
+      rpmCtx.fillText('now →', padL + chartW, H - 6);
+
+      // legend
+      rpmCtx.fillStyle = '#47aaff';
+      rpmCtx.textAlign = 'left';
+      rpmCtx.fillText('■ Left', padL + 4, padT + 12);
+      rpmCtx.fillStyle = '#ff6b47';
+      rpmCtx.fillText('■ Right', padL + 60, padT + 12);
+
+      // Y axis label
+      rpmCtx.save();
+      rpmCtx.translate(10, H / 2);
+      rpmCtx.rotate(-Math.PI / 2);
+      rpmCtx.textAlign = 'center';
+      rpmCtx.fillStyle = '#6b7280';
+      rpmCtx.fillText('RPM', 0, 0);
+      rpmCtx.restore();
+    }
+
+    // =========================================================
+    // MAIN ANIMATION LOOP
+    // =========================================================
+    let lastTime = 0;
+    let rpmTick = 0;
+
+    function loop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      // Update rotation angles
+      S.angleCarrier += S.omegaCarrier * dt;
+      S.angleLeft += S.omegaLeft * dt;
+      S.angleRight += S.omegaRight * dt;
+      // Spider self-spin: when wheels differ, spiders spin on their cross-pin axis.
+      // omegaSpider = (omegaRight - omegaLeft) / 2 * (sideGearR/spiderR) ratio approx
+      const spiderSpin = (S.omegaRight - S.omegaLeft) / 2 * (26 / 14);
+      S.angleSpider = (S.angleSpider || 0) + spiderSpin * dt;
+
+      drawDiff();
+      drawTopDown();
+
+      // Update RPM buffer ~10fps
+      rpmTick += dt;
+      if (rpmTick > 0.1) {
+        pushRPMBuffer();
+        rpmTick = 0;
+      }
+      drawRPMChart();
+
+      requestAnimationFrame(loop);
+    }
+
+    // =========================================================
+    // INIT
+    // =========================================================
+    compute();
+    updateUI();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+
+</html>

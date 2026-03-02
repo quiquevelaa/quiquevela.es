@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Optimization Simulator</title>
+    <!-- Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #343a40;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+            --header-bg: #ffffff;
+
+            /* Core Palette */
+            --color-navy: #1e3a5f;
+            --color-teal: #2a9d8f;
+            --color-coral: #e76f51;
+            --color-amber: #e9c46a;
+            --color-purple: #6a4c93;
+            --color-grey: #adb5bd;
+
+            --color-navy-hover: #152945;
+            --color-teal-light: rgba(42, 157, 143, 0.15);
+            --color-coral-light: rgba(231, 111, 81, 0.15);
+
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            min-width: 1440px;
+            /* Ensure no horizontal scrolling on 1440px */
+            overflow-x: hidden;
+        }
+
+        /* --- Layout --- */
+        .header {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-navy);
+            margin-bottom: 0.25rem;
+        }
+
+        .header p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .btn {
+            background-color: var(--color-navy);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color var(--transition-speed);
+        }
+
+        .btn:hover {
+            background-color: var(--color-navy-hover);
+        }
+
+        .btn-reset {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-reset:hover {
+            background-color: var(--bg-color);
+        }
+
+        .main-container {
+            display: flex;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .left-col {
+            width: 30%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .right-col {
+            width: 70%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* --- Cards --- */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--color-grey);
+            overflow: hidden;
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-navy {
+            border-left-color: var(--color-navy);
+        }
+
+        .card-teal {
+            border-left-color: var(--color-teal);
+        }
+
+        .card-amber {
+            border-left-color: var(--color-amber);
+        }
+
+        .card-coral {
+            border-left-color: var(--color-coral);
+        }
+
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.01);
+        }
+
+        .card-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-color);
+            user-select: none;
+        }
+
+        .card-content {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* --- Controls --- */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: all var(--transition-speed) ease;
+            opacity: 1;
+            max-height: 200px;
+            overflow: hidden;
+        }
+
+        .control-group.hidden {
+            opacity: 0;
+            max-height: 0;
+            margin: 0;
+            padding: 0;
+            pointer-events: none;
+            border: none;
+        }
+
+        .control-group.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .control-units {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            accent-color: var(--color-navy);
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color);
+            outline: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-navy);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            text-align: right;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--color-navy);
+        }
+
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            outline: none;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        /* --- Opt Engine --- */
+        .opt-text {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .opt-results {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .opt-results.visible {
+            display: flex;
+        }
+
+        .opt-row {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .opt-formula {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.03);
+            padding: 0.25rem;
+            border-radius: 2px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .opt-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* --- Right Col: KPIs --- */
+        .kpi-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+        }
+
+        .kpi-card {
+            flex: 1;
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--card-shadow);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            border: 1px solid transparent;
+            transition: transform var(--transition-speed);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .text-green {
+            color: var(--color-teal) !important;
+        }
+
+        .text-red {
+            color: var(--color-coral) !important;
+        }
+
+        .text-amber {
+            color: var(--color-amber) !important;
+        }
+
+        /* --- Right Col: Charts --- */
+        .chart-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--card-shadow);
+            padding: 1.25rem;
+            height: 430px;
+            position: relative;
+        }
+
+        .chart-card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        /* --- Bottom Section --- */
+        .info-panel {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+        }
+
+        .info-panel-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-navy);
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+
+        .info-col h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .formula-block {
+            margin-bottom: 1rem;
+        }
+
+        .formula-block .f-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .formula-block .f-math {
+            font-family: monospace;
+            font-size: 0.875rem;
+            background: rgba(0, 0, 0, 0.03);
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            margin-top: 0.25rem;
+            color: var(--color-navy);
+        }
+
+        .assumptions-list {
+            list-style-position: inside;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .assumptions-list li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.25rem;
+            text-indent: -1.25rem;
+        }
+
+        .assumptions-list li::before {
+            content: "• ";
+            color: var(--color-navy);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div>
+            <h1>Supply Chain Optimization Simulator</h1>
+            <p>Configure parameters on the left, see outcomes on the right in real time</p>
+        </div>
+        <button class="btn btn-reset" id="btnReset">Reset to Defaults</button>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+
+        <!-- Left Column (Controls) -->
+        <div class="left-col">
+
+            <!-- Card 1: Demand Parameters -->
+            <div class="card card-navy">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <h2>Demand Parameters</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="card-content">
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Demand Type</span>
+                        </div>
+                        <select id="param-demand-type">
+                            <option value="deterministic">Deterministic</option>
+                            <option value="seasonal" selected>Seasonal</option>
+                            <option value="trend">Trend</option>
+                            <option value="stochastic">Stochastic</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Average Demand Rate</span>
+                            <span class="control-units">units / week</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-avg-demand" min="10" max="500" step="5" value="100">
+                            <input type="number" id="num-avg-demand" min="10" max="500" step="5" value="100">
+                        </div>
+                    </div>
+
+                    <div class="control-group" id="grp-variability">
+                        <div class="control-header">
+                            <span class="control-label">Demand Variability (Std Dev)</span>
+                            <span class="control-units">units / week</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-var" min="0" max="100" step="1" value="15">
+                            <input type="number" id="num-var" min="0" max="100" step="1" value="15">
+                        </div>
+                    </div>
+
+                    <div class="control-group" id="grp-seasonal-amp">
+                        <div class="control-header">
+                            <span class="control-label">Seasonal Amplitude</span>
+                            <span class="control-units">% of avg</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-seas-amp" min="0" max="100" step="1" value="40">
+                            <input type="number" id="num-seas-amp" min="0" max="100" step="1" value="40">
+                        </div>
+                    </div>
+
+                    <div class="control-group" id="grp-seasonal-period">
+                        <div class="control-header">
+                            <span class="control-label">Seasonal Period</span>
+                            <span class="control-units">weeks</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-seas-period" min="4" max="104" step="1" value="52">
+                            <input type="number" id="num-seas-period" min="4" max="104" step="1" value="52">
+                        </div>
+                    </div>
+
+                    <div class="control-group hidden" id="grp-trend-growth">
+                        <div class="control-header">
+                            <span class="control-label">Trend Growth Rate</span>
+                            <span class="control-units">% / year</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-trend" min="-20" max="50" step="0.5" value="0">
+                            <input type="number" id="num-trend" min="-20" max="50" step="0.5" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Inventory Policy -->
+            <div class="card card-teal">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <h2>Inventory Policy</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="card-content">
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Order Quantity (Q)</span>
+                            <span class="control-units">units</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-q" min="10" max="2000" step="10" value="200">
+                            <input type="number" id="num-q" min="10" max="2000" step="10" value="200">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Reorder Point (ROP)</span>
+                            <span class="control-units">units</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-rop" min="0" max="1000" step="5" value="180">
+                            <input type="number" id="num-rop" min="0" max="1000" step="5" value="180">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Lead Time</span>
+                            <span class="control-units">weeks</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-lt" min="0" max="12" step="0.5" value="2">
+                            <input type="number" id="num-lt" min="0" max="12" step="0.5" value="2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Cost and Financial Parameters -->
+            <div class="card card-amber">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <h2>Cost and Financial Parameters</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="card-content">
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Ordering Cost (S)</span>
+                            <span class="control-units">$/order</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-cost-s" min="10" max="1000" step="10" value="150">
+                            <input type="number" id="num-cost-s" min="10" max="1000" step="10" value="150">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Holding Cost (h)</span>
+                            <span class="control-units">$/unit/week</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-cost-h" min="0.10" max="10.00" step="0.10" value="2.00">
+                            <input type="number" id="num-cost-h" min="0.10" max="10.00" step="0.10" value="2.00">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Unit Cost (c)</span>
+                            <span class="control-units">$/unit</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-cost-c" min="1" max="500" step="1" value="10">
+                            <input type="number" id="num-cost-c" min="1" max="500" step="1" value="10">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Selling Price (p)</span>
+                            <span class="control-units">$/unit</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-price" min="1" max="1000" step="1" value="25">
+                            <input type="number" id="num-price" min="1" max="1000" step="1" value="25">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span class="control-label">Stockout Penalty</span>
+                            <span class="control-units">$/unit lost</span>
+                        </div>
+                        <div class="input-row">
+                            <input type="range" id="slider-penalty" min="0" max="50" step="0.50" value="8">
+                            <input type="number" id="num-penalty" min="0" max="50" step="0.50" value="8">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Optimization Engine -->
+            <div class="card card-coral">
+                <div class="card-header" onclick="toggleCard(this)">
+                    <h2>Optimization Engine</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="card-content">
+                    <p class="opt-text">
+                        The optimizer calculates the Economic Order Quantity (EOQ) and the statistically optimal Reorder
+                        Point based on your current cost and demand parameters. Click the button below to run it.
+                    </p>
+                    <button class="btn btn-full" id="btnOptimize">Run Optimization</button>
+
+                    <div class="opt-results" id="optResultsBox">
+                        <div class="opt-row" id="optQText">Optimal Q* = ? units</div>
+                        <div class="opt-formula" id="optQFormula">Q* = sqrt(...)</div>
+                        <div class="opt-row" id="optROPText">Optimal ROP* = ? units</div>
+                        <div class="opt-formula" id="optROPFormula">ROP* = ...</div>
+                        <div class="opt-row" id="optCostText">Expected Annual Cost = $?</div>
+                        <p class="opt-note">These are the theoretically optimal values given your current parameters.
+                            Click Apply to update the simulation.</p>
+                        <button class="btn btn-full" id="btnApplyOpt">Apply Optimal Values</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column (Charts & KPIs) -->
+        <div class="right-col">
+
+            <!-- KPIs -->
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <span class="kpi-label">Total Profit (2 Years)</span>
+                    <span class="kpi-value" id="kpi-profit">$0.00</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Service Level</span>
+                    <span class="kpi-value" id="kpi-service-level">0.0%</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Fill Rate</span>
+                    <span class="kpi-value" id="kpi-fill-rate">0.0%</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Average Inventory Level</span>
+                    <span class="kpi-value" id="kpi-avg-inv">0 units</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">Number of Orders Placed</span>
+                    <span class="kpi-value" id="kpi-orders">0</span>
+                </div>
+            </div>
+
+            <!-- Chart 1 -->
+            <div class="chart-card">
+                <canvas id="chartDemand"></canvas>
+            </div>
+
+            <!-- Chart 2 -->
+            <div class="chart-card">
+                <canvas id="chartInventory"></canvas>
+            </div>
+
+            <!-- Chart 3 -->
+            <div class="chart-card">
+                <canvas id="chartCosts"></canvas>
+            </div>
+
+            <!-- Chart 4 -->
+            <div class="chart-card">
+                <canvas id="chartProfit"></canvas>
+            </div>
+
+            <!-- Formulas and Assumptions Panel -->
+            <div class="info-panel">
+                <h2 class="info-panel-title">Model Formulas and Assumptions</h2>
+                <div class="info-grid">
+                    <div class="info-col">
+                        <h3>Formulas Used</h3>
+
+                        <div class="formula-block">
+                            <div class="f-label">EOQ Formula (Economic Order Quantity)</div>
+                            <div class="f-math">Q* &nbsp;=&nbsp; &radic;<span style="text-decoration:overline">&nbsp;( 2
+                                    &times; D<sub>annual</sub> &times; S ) / h<sub>annual</sub>&nbsp;</span></div>
+                        </div>
+                        <div class="formula-block">
+                            <div class="f-label">Reorder Point Formula</div>
+                            <div class="f-math">ROP &nbsp;=&nbsp; d&#772; &times; L &nbsp;+&nbsp; z &times;
+                                &sigma;<sub>d</sub> &times; &radic;<span
+                                    style="text-decoration:overline">&nbsp;L&nbsp;</span></div>
+                        </div>
+                        <div class="formula-block">
+                            <div class="f-label">Safety Stock Formula</div>
+                            <div class="f-math">SS &nbsp;=&nbsp; z &times; &sigma;<sub>d</sub> &times; &radic;<span
+                                    style="text-decoration:overline">&nbsp;L&nbsp;</span></div>
+                        </div>
+                        <div class="formula-block">
+                            <div class="f-label">Service Level Formula</div>
+                            <div class="f-math">SL &nbsp;=&nbsp; <span style="font-size: 0.9em">(cycles without
+                                    stockout) &divide; (total cycles)</span></div>
+                        </div>
+                        <div class="formula-block">
+                            <div class="f-label">Fill Rate Formula</div>
+                            <div class="f-math">FR &nbsp;=&nbsp; <span style="font-size: 0.9em">(total demand satisfied)
+                                    &divide; (total demand generated)</span></div>
+                        </div>
+                        <div class="formula-block">
+                            <div class="f-label">Total Cost Reference Formula</div>
+                            <div class="f-math">TC<sub>annual</sub> &nbsp;=&nbsp; (S &times; D<sub>annual</sub> / Q)
+                                &nbsp;+&nbsp; (h<sub>annual</sub> &times; Q / 2) &nbsp;+&nbsp; (&pi; &times; annual lost
+                                units)</div>
+                        </div>
+                    </div>
+                    <div class="info-col">
+                        <h3>Model Assumptions</h3>
+                        <ul class="assumptions-list">
+                            <li>Continuous review inventory system: inventory position is evaluated every week</li>
+                            <li>Lead time is constant and deterministic with no variability</li>
+                            <li>No backorders: all unmet demand in a given week is permanently lost</li>
+                            <li>Holding cost is linear and proportional to the number of units held each week</li>
+                            <li>Orders are always of fixed size Q, placed immediately when inventory hits or falls below
+                                ROP</li>
+                            <li>Only one order can be outstanding at a time (no order is placed if one is already in
+                                transit)</li>
+                            <li>Single product, single echelon supply chain with no supply constraints</li>
+                            <li>No minimum order quantities or maximum storage capacity constraints</li>
+                            <li>Demand is statistically independent across weeks</li>
+                            <li>Initial inventory is set to Q + ROP to avoid distorted results in the early weeks of the
+                                simulation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Utilities
+        function formatDollar(num) {
+            return '$' + parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        function formatPercent(num) {
+            return parseFloat(num).toFixed(1) + '%';
+        }
+        function boxMullerTransform(mean, stdDev) {
+            const u1 = Math.random();
+            const u2 = Math.random();
+            const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            return z * stdDev + mean;
+        }
+
+        // Color Constants
+        const COLORS = {
+            navy: '#1e3a5f',
+            teal: '#2a9d8f',
+            coral: '#e76f51',
+            amber: '#e9c46a',
+            purple: '#6a4c93',
+            grey: '#adb5bd',
+            coralFill: 'rgba(231, 111, 81, 0.2)',
+            greenFill: 'rgba(42, 157, 143, 0.2)',
+            redFill: 'rgba(231, 111, 81, 0.2)'
+        };
+
+        // State / Defaults
+        const DEFAULTS = {
+            demandType: 'seasonal',
+            avgDemand: 100,
+            variability: 15,
+            seasonalAmp: 40,
+            seasonalPeriod: 52,
+            trendGrowth: 0,
+            q: 200,
+            rop: 180,
+            lt: 2,
+            costS: 150,
+            costH: 2.00,
+            costC: 10,
+            price: 25,
+            penalty: 8
+        };
+
+        let state = { ...DEFAULTS };
+        let charts = {};
+        let simData = null;
+        let pendingOpt = null;
+
+        // UI Interactions
+        function toggleCard(headerElement) {
+            const content = headerElement.nextElementSibling;
+            if (content.style.display === 'none') {
+                content.style.display = 'flex';
+                headerElement.querySelector('.toggle-icon').textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                headerElement.querySelector('.toggle-icon').textContent = '▶';
+            }
+        }
+
+        function createBinding(idSlider, idNum, stateKey, isFloat = false) {
+            const slider = document.getElementById(idSlider);
+            const num = document.getElementById(idNum);
+
+            const updateVal = (val) => {
+                let parsed = isFloat ? parseFloat(val) : parseInt(val, 10);
+                if (isNaN(parsed)) return;
+
+                // Enforce bounds based on slider min/max
+                const min = isFloat ? parseFloat(slider.min) : parseInt(slider.min, 10);
+                const max = isFloat ? parseFloat(slider.max) : parseInt(slider.max, 10);
+                if (parsed < min) parsed = min;
+                if (parsed > max) parsed = max;
+
+                slider.value = parsed;
+                num.value = parsed;
+                state[stateKey] = parsed;
+                runSimulationAndRender();
+            };
+
+            const onInput = (e) => {
+                updateVal(e.target.value);
+            };
+
+            slider.addEventListener('input', onInput);
+            num.addEventListener('blur', onInput);
+            num.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') onInput(e);
+            });
+        }
+
+        function initBindings() {
+            createBinding('slider-avg-demand', 'num-avg-demand', 'avgDemand');
+            createBinding('slider-var', 'num-var', 'variability');
+            createBinding('slider-seas-amp', 'num-seas-amp', 'seasonalAmp');
+            createBinding('slider-seas-period', 'num-seas-period', 'seasonalPeriod');
+            createBinding('slider-trend', 'num-trend', 'trendGrowth', true);
+
+            createBinding('slider-q', 'num-q', 'q');
+            createBinding('slider-rop', 'num-rop', 'rop');
+            createBinding('slider-lt', 'num-lt', 'lt', true);
+
+            createBinding('slider-cost-s', 'num-cost-s', 'costS');
+            createBinding('slider-cost-h', 'num-cost-h', 'costH', true);
+            createBinding('slider-cost-c', 'num-cost-c', 'costC');
+            createBinding('slider-price', 'num-price', 'price');
+            createBinding('slider-penalty', 'num-penalty', 'penalty', true);
+
+            const dt = document.getElementById('param-demand-type');
+            dt.addEventListener('change', (e) => {
+                state.demandType = e.target.value;
+                updateDemandTypeVisibility();
+                runSimulationAndRender();
+            });
+
+            document.getElementById('btnReset').addEventListener('click', () => {
+                state = { ...DEFAULTS };
+
+                document.getElementById('param-demand-type').value = state.demandType;
+
+                const uiKeys = [
+                    ['avgDemand', 'avg-demand', false],
+                    ['variability', 'var', false],
+                    ['seasonalAmp', 'seas-amp', false],
+                    ['seasonalPeriod', 'seas-period', false],
+                    ['trendGrowth', 'trend', true],
+                    ['q', 'q', false],
+                    ['rop', 'rop', false],
+                    ['lt', 'lt', true],
+                    ['costS', 'cost-s', false],
+                    ['costH', 'cost-h', true],
+                    ['costC', 'cost-c', false],
+                    ['price', 'price', false],
+                    ['penalty', 'penalty', true]
+                ];
+
+                uiKeys.forEach(([sKey, idBase]) => {
+                    document.getElementById(`slider-${idBase}`).value = state[sKey];
+                    document.getElementById(`num-${idBase}`).value = state[sKey];
+                });
+
+                updateDemandTypeVisibility();
+                document.getElementById('optResultsBox').classList.remove('visible');
+                runSimulationAndRender();
+            });
+
+            document.getElementById('btnOptimize').addEventListener('click', runOptimization);
+            document.getElementById('btnApplyOpt').addEventListener('click', applyOptimization);
+        }
+
+        function updateDemandTypeVisibility() {
+            const dt = state.demandType;
+            const vars = document.getElementById('grp-variability');
+            const seasAmp = document.getElementById('grp-seasonal-amp');
+            const seasPeriod = document.getElementById('grp-seasonal-period');
+            const trend = document.getElementById('grp-trend-growth');
+
+            // Default hidden
+            seasAmp.classList.add('hidden');
+            seasPeriod.classList.add('hidden');
+            trend.classList.add('hidden');
+            vars.classList.remove('disabled');
+
+            if (dt === 'deterministic') {
+                vars.classList.add('disabled');
+            } else if (dt === 'seasonal') {
+                seasAmp.classList.remove('hidden');
+                seasPeriod.classList.remove('hidden');
+            } else if (dt === 'trend') {
+                trend.classList.remove('hidden');
+            }
+        }
+
+        // Setup Charts
+        function initCharts() {
+            Chart.defaults.font.family = 'Inter';
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 300 },
+                elements: {
+                    point: {
+                        radius: 0,
+                        hitRadius: 10,
+                        hoverRadius: 4
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                }
+            };
+
+            const ctxDemand = document.getElementById('chartDemand').getContext('2d');
+            charts.demand = new Chart(ctxDemand, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 728 }, (_, i) => i + 1),
+                    datasets: [
+                        { label: 'Total Demand', borderColor: COLORS.navy, borderWidth: 2, tension: 0.1, fill: false },
+                        { label: 'Demand Satisfied', borderColor: COLORS.teal, borderWidth: 2, tension: 0.1, fill: false },
+                        { label: 'Lost Sales', borderColor: COLORS.coral, backgroundColor: COLORS.coralFill, borderWidth: 2, tension: 0.1, fill: true }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: { title: { display: true, text: 'Day (Marker at Day 364)' } },
+                        y: { title: { display: true, text: 'Units per Day' }, min: 0 }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        title: { display: true, text: 'Demand and Fulfillment (Weekly, Units)' },
+                        annotation: { /* We don't have chartjs-plugin-annotation, will use line options */ }
+                    }
+                }
+            });
+
+            const ctxInventory = document.getElementById('chartInventory').getContext('2d');
+            charts.inventory = new Chart(ctxInventory, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 728 }, (_, i) => i + 1),
+                    datasets: [
+                        { label: 'On-Hand Inventory', borderColor: COLORS.navy, borderWidth: 2, tension: 0, fill: false, z: 10 },
+                        { label: 'Avg Inventory', borderColor: COLORS.amber, borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0, fill: false },
+                        { label: 'Safety Stock', borderColor: COLORS.grey, borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0, fill: false },
+                        { label: 'ROP', borderColor: COLORS.coral, borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0, fill: false }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: { title: { display: true, text: 'Day' } },
+                        y: { title: { display: true, text: 'Units' }, min: 0 }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        title: { display: true, text: 'Inventory Level Over Time (Units)' }
+                    }
+                }
+            });
+
+            const ctxCosts = document.getElementById('chartCosts').getContext('2d');
+            charts.costs = new Chart(ctxCosts, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 728 }, (_, i) => i + 1),
+                    datasets: [
+                        { label: 'Revenue', borderColor: COLORS.teal, borderWidth: 2, tension: 0.1, fill: false },
+                        { label: 'COGS', borderColor: COLORS.navy, borderWidth: 2, tension: 0.1, fill: false },
+                        { label: 'Holding Cost', borderColor: COLORS.amber, borderWidth: 2, tension: 0.1, fill: false },
+                        { label: 'Ordering Cost', borderColor: COLORS.purple, borderWidth: 2, tension: 0.1, fill: false },
+                        { label: 'Lost Sales Cost', borderColor: COLORS.coral, borderWidth: 2, tension: 0.1, fill: false }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: { title: { display: true, text: 'Day' } },
+                        y: { title: { display: true, text: '$ per Day' } }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        title: { display: true, text: 'Weekly Revenue and Costs ($)' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + formatDollar(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const ctxProfit = document.getElementById('chartProfit').getContext('2d');
+            charts.profit = new Chart(ctxProfit, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 728 }, (_, i) => i + 1),
+                    datasets: [
+                        {
+                            label: 'Cumulative Profit',
+                            borderColor: COLORS.navy,
+                            borderWidth: 2.5,
+                            tension: 0.1,
+                            fill: {
+                                target: 'origin',
+                                above: COLORS.greenFill,
+                                below: COLORS.redFill
+                            }
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: { title: { display: true, text: 'Day' } },
+                        y: { title: { display: true, text: 'Cumulative Profit ($)' } }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        title: { display: true, text: 'Cumulative Profit Over Time ($)' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + formatDollar(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Simulation Engine
+        function runSimulation() {
+            let inventory = state.q + state.rop;
+            let pendingOrders = [];
+            let totalOrdersPlaced = 0;
+            let cyclesWithoutStockout = 0;
+            let totalCycles = 0; // Each "cycle" usually ends when we place an order or evaluate over time. Let's define cycles as order placing intervals. Actually, prompt: "number of replenishment cycles with no stockout divided by total cycles". We will define a cycle starting from an order arrival to the next order arrival. Wait, standard definition is easiest: increment cycle when order arrives. Let's track if stockout happened currently.
+
+            // To track cycles properly: A cycle begins when an order is placed (or simulation starts), ends when the next order arrives. We will track if stockout happens during that time.
+            let currentCycleHadStockout = false;
+            let totalReplenishmentCycles = 0; // Number of orders arrived
+            let noStockoutCycles = 0; // Number of arrived orders where no stockout occurred since last arrival
+
+            let data = {
+                demand: [], demandSatisfied: [], lostSales: [],
+                inventory: [],
+                revenue: [], cogs: [], holding: [], ordering: [], lostSalesCost: [],
+                profitWeekly: [], cumulativeProfit: [],
+                avgInventoryLine: [], safetyStockLine: [], ropLine: []
+            };
+
+            let cumProfit = 0;
+            let totDemand = 0;
+            let totSatisfied = 0;
+            let totalInvSum = 0;
+
+            const Z = 1.65;
+            const ss = Math.round(Z * state.variability * Math.sqrt(state.lt));
+
+            // Run day by day
+            const numDays = 728; // 104 weeks * 7 = 728 days
+            const dAvg = state.avgDemand / 7;
+            const dVar = state.variability / Math.sqrt(7);
+            const dLt = state.lt * 7;
+            const dH = state.costH / 7;
+            const dPeriod = state.seasonalPeriod * 7;
+
+            for (let t = 1; t <= numDays; t++) {
+                // 1. Order Arrivals
+                let orderArrivedThisDay = false;
+                pendingOrders = pendingOrders.filter(o => {
+                    if (o.arrivalDay <= t) {
+                        inventory += o.quantity;
+                        orderArrivedThisDay = true;
+
+                        // Close previous cycle
+                        totalReplenishmentCycles++;
+                        if (!currentCycleHadStockout) {
+                            noStockoutCycles++;
+                        }
+                        currentCycleHadStockout = false; // Reset for new cycle
+
+                        return false;
+                    }
+                    return true;
+                });
+
+                // 2. Generate Demand
+                let d = 0;
+                if (state.demandType === 'deterministic') {
+                    d = dAvg;
+                } else if (state.demandType === 'seasonal') {
+                    const noise = dVar > 0 ? boxMullerTransform(0, dVar) : 0;
+                    d = dAvg * (1 + (state.seasonalAmp / 100) * Math.sin(2 * Math.PI * t / dPeriod)) + noise;
+                } else if (state.demandType === 'trend') {
+                    const noise = dVar > 0 ? boxMullerTransform(0, dVar) : 0;
+                    const wGrowth = (state.trendGrowth / 100) / 364; // annual % to daily rate
+                    d = dAvg * (1 + wGrowth * t) + noise;
+                } else if (state.demandType === 'stochastic') {
+                    d = boxMullerTransform(dAvg, dVar);
+                }
+                d = Math.max(0, Math.round(d));
+
+                // 3. Satisfy Demand
+                let satisfied = 0;
+                let lost = 0;
+                if (inventory >= d) {
+                    satisfied = d;
+                    inventory -= d;
+                } else {
+                    satisfied = inventory;
+                    lost = d - inventory;
+                    inventory = 0;
+                    currentCycleHadStockout = true;
+                }
+
+                // 4. Reorder Condition
+                let orderPlaced = false;
+                if (inventory <= state.rop && pendingOrders.length === 0) {
+                    pendingOrders.push({
+                        quantity: state.q,
+                        arrivalDay: t + dLt
+                    });
+                    totalOrdersPlaced++;
+                    orderPlaced = true;
+                }
+
+                // Financials
+                const rev = satisfied * state.price;
+                const cogs = satisfied * state.costC;
+                const hh = inventory * dH;
+                const ord = orderPlaced ? state.costS : 0;
+                const lsCost = lost * state.penalty;
+                const profitDiff = rev - cogs - hh - ord - lsCost;
+                cumProfit += profitDiff;
+
+                // Track
+                data.demand.push(d);
+                data.demandSatisfied.push(satisfied);
+                data.lostSales.push(lost);
+                data.inventory.push(inventory);
+
+                data.revenue.push(rev);
+                data.cogs.push(cogs);
+                data.holding.push(hh);
+                data.ordering.push(ord);
+                data.lostSalesCost.push(lsCost);
+                data.profitWeekly.push(profitDiff);
+                data.cumulativeProfit.push(cumProfit);
+
+                totDemand += d;
+                totSatisfied += satisfied;
+                totalInvSum += inventory;
+            }
+
+            // A final check if a cycle was ongoing to capture partial cycle (if prompt wants strict cycles, let's include an initial ongoing cycle)
+            totalReplenishmentCycles++; // the final open cycle at end of simulation
+            if (!currentCycleHadStockout) {
+                noStockoutCycles++;
+            }
+
+            const avgInv = totalInvSum / numDays;
+            const sl = totalReplenishmentCycles > 0 ? (noStockoutCycles / totalReplenishmentCycles) * 100 : 0;
+            const fr = totDemand > 0 ? (totSatisfied / totDemand) * 100 : 0;
+
+            // Fill reference lines
+            for (let t = 0; t < numDays; t++) {
+                data.avgInventoryLine.push(avgInv);
+                data.safetyStockLine.push(ss);
+                data.ropLine.push(state.rop);
+            }
+
+            simData = {
+                data,
+                metrics: {
+                    totalProfit: cumProfit,
+                    serviceLevel: sl,
+                    fillRate: fr,
+                    avgInventory: Math.round(avgInv),
+                    totalOrders: totalOrdersPlaced
+                }
+            };
+        }
+
+        // Updating UI
+        function updateKPIs() {
+            const m = simData.metrics;
+            const elProfit = document.getElementById('kpi-profit');
+            elProfit.textContent = formatDollar(m.totalProfit);
+            elProfit.className = 'kpi-value ' + (m.totalProfit >= 0 ? 'text-green' : 'text-red');
+
+            const elSl = document.getElementById('kpi-service-level');
+            elSl.textContent = formatPercent(m.serviceLevel);
+            let slClass = '';
+            if (m.serviceLevel >= 95) slClass = 'text-green';
+            else if (m.serviceLevel >= 85) slClass = 'text-amber';
+            else slClass = 'text-red';
+            elSl.className = 'kpi-value ' + slClass;
+
+            const elFr = document.getElementById('kpi-fill-rate');
+            elFr.textContent = formatPercent(m.fillRate);
+            let frClass = '';
+            if (m.fillRate >= 95) frClass = 'text-green';
+            else if (m.fillRate >= 85) frClass = 'text-amber';
+            else frClass = 'text-red';
+            elFr.className = 'kpi-value ' + frClass;
+
+            const elInv = document.getElementById('kpi-avg-inv');
+            elInv.textContent = m.avgInventory + ' units';
+
+            const elOrd = document.getElementById('kpi-orders');
+            elOrd.textContent = m.totalOrders;
+        }
+
+        function updateCharts() {
+            const d = simData.data;
+
+            charts.demand.data.datasets[0].data = d.demand;
+            charts.demand.data.datasets[1].data = d.demandSatisfied;
+            charts.demand.data.datasets[2].data = d.lostSales;
+            charts.demand.update();
+
+            charts.inventory.data.datasets[0].data = d.inventory;
+            charts.inventory.data.datasets[1].data = d.avgInventoryLine;
+            charts.inventory.data.datasets[2].data = d.safetyStockLine;
+            charts.inventory.data.datasets[3].data = d.ropLine;
+            charts.inventory.update();
+
+            charts.costs.data.datasets[0].data = d.revenue;
+            charts.costs.data.datasets[1].data = d.cogs;
+            charts.costs.data.datasets[2].data = d.holding;
+            charts.costs.data.datasets[3].data = d.ordering;
+            charts.costs.data.datasets[4].data = d.lostSalesCost;
+            charts.costs.update();
+
+            charts.profit.data.datasets[0].data = d.cumulativeProfit;
+            charts.profit.update();
+        }
+
+        function runSimulationAndRender() {
+            runSimulation();
+            updateKPIs();
+            updateCharts();
+        }
+
+        // Optimization
+        function runOptimization() {
+            const Z = 1.65;
+            const dAnnual = state.avgDemand * 52;
+            const hAnnual = state.costH * 52;
+            const S = state.costS;
+
+            const optQ = Math.round(Math.sqrt((2 * dAnnual * S) / hAnnual));
+            const optROP = Math.round(state.avgDemand * state.lt + Z * state.variability * Math.sqrt(state.lt));
+
+            const totalLostUnits = simData.data.lostSales.reduce((a, b) => a + b, 0);
+            const annualLostApprox = (totalLostUnits / 2) * state.penalty;
+            const expectedCost = (S * dAnnual / optQ) + (hAnnual * optQ / 2) + annualLostApprox;
+
+            document.getElementById('optQText').textContent = `Optimal Q* = ${optQ} units`;
+            document.getElementById('optQFormula').innerHTML = `Q* &nbsp;=&nbsp; &radic;<span style="text-decoration:overline">&nbsp;( 2 &times; ${dAnnual.toFixed(0)} &times; ${S.toFixed(2)} ) / ${hAnnual.toFixed(2)}&nbsp;</span> &nbsp;=&nbsp; ${optQ} units`;
+
+            document.getElementById('optROPText').textContent = `Optimal ROP* = ${optROP} units`;
+            const ssPart = (Z * state.variability * Math.sqrt(state.lt)).toFixed(1);
+            document.getElementById('optROPFormula').innerHTML = `ROP* &nbsp;=&nbsp; d&#772; &times; L &nbsp;+&nbsp; z &times; &sigma;<sub>d</sub> &times; &radic;<span style="text-decoration:overline">&nbsp;L&nbsp;</span><br><br>ROP* &nbsp;=&nbsp; ${parseFloat(state.avgDemand).toFixed(0)} &times; ${parseFloat(state.lt).toFixed(1)} &nbsp;+&nbsp; 1.65 &times; ${parseFloat(state.variability).toFixed(1)} &times; &radic;<span style="text-decoration:overline">&nbsp;${parseFloat(state.lt).toFixed(1)}&nbsp;</span> &nbsp;=&nbsp; ${optROP} units`;
+
+            document.getElementById('optCostText').textContent = `Expected Annual Cost = ${formatDollar(expectedCost)}`;
+
+            document.getElementById('optResultsBox').classList.add('visible');
+
+            pendingOpt = { q: optQ, rop: optROP };
+        }
+
+        function applyOptimization() {
+            if (!pendingOpt) return;
+
+            // Set sliders & inputs
+            const sliderQ = document.getElementById('slider-q');
+            const numQ = document.getElementById('num-q');
+            const sliderROP = document.getElementById('slider-rop');
+            const numROP = document.getElementById('num-rop');
+
+            let applyQ = pendingOpt.q;
+            let applyROP = pendingOpt.rop;
+
+            if (applyQ > parseInt(sliderQ.max)) sliderQ.max = applyQ;
+            if (applyROP > parseInt(sliderROP.max)) sliderROP.max = applyROP;
+
+            sliderQ.value = applyQ;
+            numQ.value = applyQ;
+            state.q = applyQ;
+
+            sliderROP.value = applyROP;
+            numROP.value = applyROP;
+            state.rop = applyROP;
+
+            runSimulationAndRender();
+        }
+
+        // Boot
+        window.addEventListener('DOMContentLoaded', () => {
+            initBindings();
+            initCharts();
+            updateDemandTypeVisibility();
+            runSimulationAndRender();
+        });
+
+    </script>
+</body>
+
+</html>
